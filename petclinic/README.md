@@ -1,5 +1,7 @@
 Deploy the petclinic app with a MySQL DB VM
 
+Note: modify the DV sc to the actual one according to your env
+
 ~~~
 oc new-project petclinic
 oc adm policy add-scc-to-user anyuid -z default
