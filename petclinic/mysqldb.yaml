@@ -73,9 +73,9 @@ spec:
                 - mkfs -t btrfs /dev/vdc
                 - mount /dev/vdc /var/lib/mysql
                 - chown mysql:mysql -R /var/lib/mysql
-                - systemctl start mariadb
                 - systemctl enable mariadb
-                - mysql -e "CREATE DATABASE myapp;"
+                - systemctl start mariadb
+                - mysql -e "CREATE DATABASE petclinic;"
                 - mysql -e "CREATE USER 'petclinic'@'%' IDENTIFIED BY 'petclinic';"
                 - mysql -e "GRANT ALL PRIVILEGES ON petclinic.* TO 'petclinic'@'%';"
                 - mysql -e "FLUSH PRIVILEGES;"
