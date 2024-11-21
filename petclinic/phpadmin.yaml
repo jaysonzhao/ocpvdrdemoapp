@@ -1,0 +1,57 @@
+# Deployment 配置
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpmyadmin
+  labels:
+    app: phpmyadmin
+spec:
+  replicas: 1  # 副本数量
+  selector:
+    matchLabels:
+      app: phpmyadmin
+  template:
+    metadata:
+      labels:
+        app: phpmyadmin
+    spec:
+      containers:
+        - name: phpmyadmin
+          image: dockerpull.org/phpmyadmin:latest
+          env:
+            - name: PMA_HOST
+              value: "petclinic-db"  
+            - name: PMA_PORT
+              value: "3306"  # MySQL 服务端口
+          ports:
+            - containerPort: 80  # phpMyAdmin 默认 HTTP 端口
+
+
+---
+# Service 配置
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpmyadmin-service
+spec:
+  selector:
+    app: phpmyadmin  # Service 选择器，与 Pod 的标签匹配
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80  # 目标容器端口
+  type: ClusterIP  # 内部通信类型
+
+---
+# Route 配置
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: phpmyadmin-route
+spec:
+  to:
+    kind: Service
+    name: phpmyadmin-service  # 与 Service 名称匹配
+  port:
+    targetPort: 80  # 目标端口
+
