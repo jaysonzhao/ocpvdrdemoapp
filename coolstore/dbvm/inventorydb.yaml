@@ -18,7 +18,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: inventory-db
+  name: inventory-database
 spec:
   selector:
     app/name: inventory-db  # Service 选择器，与 Pod 的标签匹配
@@ -108,7 +108,7 @@ spec:
                 - postgresql-setup --initdb --unit postgresql
                 - systemctl start postgresql
                 - systemctl enable postgresql
-                - sudo -u postgres psql -c "CREATE USER inventory WITH PASSWORD 'inventory';"
+                - sudo -u postgres psql -c "CREATE USER inventory WITH PASSWORD 'openshift4!';"
                 - sudo -u postgres psql -c "CREATE DATABASE inventory OWNER inventory;"
               ssh_pwauth: true
               chpasswd:
