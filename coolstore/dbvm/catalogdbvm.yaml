@@ -110,6 +110,9 @@ spec:
                 - systemctl enable postgresql
                 - sudo -u postgres psql -c "CREATE USER catalog WITH PASSWORD 'openshift4!';"
                 - sudo -u postgres psql -c "CREATE DATABASE catalog OWNER catalog;"
+                - echo 'host all all 0.0.0.0/0 md5' >> /var/lib/pgsql/data/pg_hba.conf
+                - echo "listen_addresses = '*'" >> /var/lib/pgsql/data/postgresql.conf
+                - systemctl restart postgresql
               ssh_pwauth: true
               chpasswd:
               user: root
