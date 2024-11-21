@@ -33,6 +33,9 @@ spec:
             - disk:
                 bus: virtio
               name: cloudinitdisk
+            - disk:
+                bus: virtio
+              name: dbdata
           interfaces:
             - masquerade: {}
               model: virtio
@@ -67,6 +70,8 @@ spec:
               runcmd:
                 - setenforce 0
                 - systemctl stop firewalld
+                - mkfs -t btrfs /dev/vdc
+                - mount /dev/vdc /var/lib/mysql
                 - systemctl start mariadb
                 - systemctl enable mariadb
                 - mysql -e "CREATE DATABASE myapp;"
@@ -80,3 +85,6 @@ spec:
               password: password
               chpasswd: { expire: False }
           name: cloudinitdisk
+        - dataVolume:
+            name: petclinic-db-dbdata
+          name: dbdata
