@@ -72,6 +72,7 @@ spec:
                 - systemctl stop firewalld
                 - mkfs -t btrfs /dev/vdc
                 - mount /dev/vdc /var/lib/mysql
+                - chown mysql:mysql -R /var/lib/mysql
                 - systemctl start mariadb
                 - systemctl enable mariadb
                 - mysql -e "CREATE DATABASE myapp;"
