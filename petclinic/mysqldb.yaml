@@ -6,7 +6,6 @@ metadata:
     description: db
   labels:
     app: database
-    app/name: petclinic-db
     os.template.kubevirt.io/fedora: 'true'
 spec:
   running: true
@@ -17,6 +16,7 @@ spec:
         vm.kubevirt.io/os: fedora
         vm.kubevirt.io/workload: server
       labels:
+        app/name: petclinic-db
         kubevirt.io/domain: example
         kubevirt.io/size: small
     spec:
