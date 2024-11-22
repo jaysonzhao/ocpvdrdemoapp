@@ -7,12 +7,11 @@ oc new-project $PROJECT_NAME
 
 # create inventory-service database vm
 # create catalog-service database vm
+# create order-service database
 oc apply -f ./dbvm
 
-# create order-service database
-oc new-app -n $PROJECT_NAME \
-             --image quay.io/openshiftlabs/ccn-mongo:4.0 \
-             --name=order-database;
+
+
 
 # create cart-service database
 oc new-app -n $PROJECT_NAME \
