@@ -1,0 +1,154 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  annotations:
+    cdi.kubevirt.io/storage.usePopulator: 'true'
+  name: order-db-dbdata
+spec:
+  preallocation: false
+  source:
+    blank: {}
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+    storageClassName: ocs-external-storagecluster-ceph-rbd
+---
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  annotations:
+    cdi.kubevirt.io/storage.usePopulator: 'true'
+  name: order-db-logdata
+spec:
+  preallocation: false
+  source:
+    blank: {}
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+    storageClassName: ocs-external-storagecluster-ceph-rbd
+---
+# Service 配置
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-database
+spec:
+  selector:
+    app/name: order-db  # Service 选择器，与 Pod 的标签匹配
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432  # 目标容器端口
+  type: ClusterIP  # 内部通信类型
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: order-db
+  annotations:
+    description: db
+  labels:
+    app: database
+    os.template.kubevirt.io/fedora: 'true'
+spec:
+  running: true
+  template:
+    metadata:
+      annotations:
+        vm.kubevirt.io/flavor: small
+        vm.kubevirt.io/os: fedora
+        vm.kubevirt.io/workload: server
+      labels:
+        app/name: order-db
+        kubevirt.io/domain: example
+        kubevirt.io/size: small
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 1
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+            - disk:
+                bus: virtio
+              name: dbdata
+            - disk:
+                bus: virtio
+              name: logdata            
+          interfaces:
+            - masquerade: {}
+              model: virtio
+              name: default
+          networkInterfaceMultiqueue: true
+          rng: {}
+        features:
+          acpi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi: {}
+        machine:
+          type: q35
+        memory:
+          guest: 4Gi
+      hostname: order-db
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              packages:
+                - mariadb-server
+              runcmd:
+                - setenforce 0
+                - systemctl stop firewalld
+                - mkfs -t btrfs /dev/vdc
+                - mkfs -t btrfs /dev/vdd
+                - mkdir -p /var/lib/mongo/
+                - mkdir -p /var/log/mongodb/
+                - mount /dev/vdc /var/lib/mongo/
+                - mount /dev/vdd /var/log/mongodb
+                - chown -R mongod:mongod /var/lib/mongo/
+                - chown -R mongod:mongod /var/log/mongodb/
+                - echo "[mongodb-org-8.0]" >> /etc/yum.repos.d/mongodb-org-8.0.repo
+                - echo "name=MongoDB Repository" >> /etc/yum.repos.d/mongodb-org-8.0.repo
+                - echo "baseurl=https://repo.mongodb.org/yum/redhat/9/mongodb-org/8.0/x86_64/" >> /etc/yum.repos.d/mongodb-org-8.0.repo
+                - echo "gpgcheck=1" >> /etc/yum.repos.d/mongodb-org-8.0.repo
+                - echo "enabled=1" >> /etc/yum.repos.d/mongodb-org-8.0.repo
+                - echo "gpgkey=https://pgp.mongodb.com/server-8.0.asc" >> /etc/yum.repos.d/mongodb-org-8.0.repo
+                - dnf -y install mongodb-mongosh-shared-openssl3
+                - dnf -y install mongodb-org
+                - systemctl enable mongod.service
+                - systemctl start mongod.service
+                - sed -i 's/127\.0\.0\.1/0.0.0.0/g' /etc/mongod.conf
+                - systemctl restart mongod.service
+                
+              ssh_pwauth: true
+              chpasswd:
+              user: root
+              password: password
+              chpasswd: { expire: False }
+          name: cloudinitdisk
+        - dataVolume:
+            name: order-db-dbdata
+          name: dbdata
+        - dataVolume:
+            name: order-db-logdata
+          name: logdata
