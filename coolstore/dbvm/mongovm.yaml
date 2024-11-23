@@ -40,8 +40,8 @@ spec:
     app/name: order-db  # Service 选择器，与 Pod 的标签匹配
   ports:
     - protocol: TCP
-      port: 5432
-      targetPort: 5432  # 目标容器端口
+      port: 27017
+      targetPort: 27017  # 目标容器端口
   type: ClusterIP  # 内部通信类型
 ---
 apiVersion: kubevirt.io/v1
