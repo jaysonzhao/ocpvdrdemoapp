@@ -1,0 +1,118 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  annotations:
+    cdi.kubevirt.io/storage.usePopulator: 'true'
+  name: inventory-db-dbdata
+spec:
+  preallocation: false
+  source:
+    pvc:
+      name: fedora-fee3d6a527c8
+      namespace: openshift-virtualization-os-images
+  storage:
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: ocs-external-storagecluster-ceph-rbd
+---
+# Service 配置
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-database
+spec:
+  selector:
+    app/name: inventory-db  # Service 选择器，与 Pod 的标签匹配
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432  # 目标容器端口
+  type: ClusterIP  # 内部通信类型
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: inventory-db
+  annotations:
+    description: db
+  labels:
+    app: database
+    os.template.kubevirt.io/fedora: 'true'
+spec:
+  running: true
+  template:
+    metadata:
+      annotations:
+        vm.kubevirt.io/flavor: small
+        vm.kubevirt.io/os: fedora
+        vm.kubevirt.io/workload: server
+      labels:
+        app/name: inventory-db
+        kubevirt.io/domain: example
+        kubevirt.io/size: small
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 1
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              model: virtio
+              name: default
+          networkInterfaceMultiqueue: true
+          rng: {}
+        features:
+          acpi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi: {}
+        machine:
+          type: q35
+        memory:
+          guest: 4Gi
+      hostname: inventory-db
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              packages:
+                - postgresql-server 
+                - postgresql-contrib
+              runcmd:
+                - setenforce 0
+                - systemctl stop firewalld
+                - mkdir -p /var/lib/pgsql/
+                - chown -R postgres:postgres /var/lib/pgsql/
+                - postgresql-setup --initdb --unit postgresql
+                - systemctl start postgresql
+                - systemctl enable postgresql
+                - sudo -u postgres psql -c "CREATE USER inventory WITH PASSWORD 'openshift4!';"
+                - sudo -u postgres psql -c "CREATE DATABASE inventory OWNER inventory;"
+                - echo 'host all all 0.0.0.0/0 md5' >> /var/lib/pgsql/data/pg_hba.conf
+                - echo "listen_addresses = '*'" >> /var/lib/pgsql/data/postgresql.conf
+                - systemctl restart postgresql
+              ssh_pwauth: true
+              chpasswd:
+              user: root
+              password: password
+              chpasswd: { expire: False }
+          name: cloudinitdisk
+        - dataVolume:
+            name: inventory-db-dbdata
+          name: rootdisk
