@@ -16,7 +16,7 @@ oc apply -f ./dbvm
 # create cart-service database
 oc new-app -n $PROJECT_NAME \
              -e REDIS_PASSWORD=$PASSWORD \
-             openshift/redis:6-el8 \
+             registry.redhat.io/rhel8/redis-6:latest \
              --name=cart-redis;
 
 
