@@ -20,14 +20,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: catalog-database
+  name: petclinic-app-vm-svc
 spec:
   selector:
-    app/name: petclinic-app  # Service 选择器，与 Pod 的标签匹配
+    app/name: petclinic-app-vm  # Service 选择器，与 Pod 的标签匹配
   ports:
     - protocol: TCP
-      port: 5432
-      targetPort: 5432  # 目标容器端口
+      port: 8080
+      targetPort: 8080  # 目标容器端口
   type: ClusterIP  # 内部通信类型
 ---
 apiVersion: kubevirt.io/v1
@@ -48,7 +48,7 @@ spec:
         vm.kubevirt.io/os: fedora
         vm.kubevirt.io/workload: server
       labels:
-        app/name: petclinic-app
+        app/name: petclinic-app-vm
         kubevirt.io/domain: example
         kubevirt.io/size: small
     spec:
@@ -97,8 +97,8 @@ spec:
                 - setenforce 0
                 - systemctl stop firewalld
                 - mkdir -p /opt/pet-app
-                - curl -o /opt/pet-app/petclinic-app.jar 
-                - java -Dquarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/petclinic -Dquarkus.datasource.username=petclinic -Dquarkus.datasource.password=petclinic -jar /opt/pet-app/petclinic-app.jar
+                - curl -o /opt/pet-app/petclinic-app.jar https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/quarkus-petclinic-1.0.jar
+                - java -Dquarkus.datasource.jdbc.url=jdbc:mysql://petclinic-db:3602/petclinic -Dquarkus.datasource.username=petclinic -Dquarkus.datasource.password=petclinic -jar /opt/pet-app/petclinic-app.jar
               ssh_pwauth: true
               chpasswd:
               user: root
