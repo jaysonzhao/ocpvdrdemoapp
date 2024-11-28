@@ -1,6 +1,7 @@
 Deploy the petclinic app with a MySQL DB VM
 
 Note: modify the DV storage class and source from os images to the actual one according to your env
+## oc get pvc  -n openshift-virtualization-os-images |grep fedora
 
 ~~~
 oc new-project petclinic
