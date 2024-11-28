@@ -1,0 +1,19 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  annotations:
+    cdi.kubevirt.io/storage.usePopulator: 'true'
+  name: petclinic-db-dbdata
+  namespace: petclinic
+
+spec:
+  preallocation: false
+  source:
+    pvc:
+      name: fedora-fee3d6a527c8
+      namespace: openshift-virtualization-os-images
+  storage:
+    resources:
+      requests:
+        storage: 30Gi
+    storageClassName: ocs-external-storagecluster-ceph-rbd
