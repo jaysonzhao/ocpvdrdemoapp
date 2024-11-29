@@ -97,9 +97,9 @@ spec:
                 - setenforce 0
                 - systemctl stop firewalld
                 - mkdir -p /opt/pet-app
-                - curl -o /opt/pet-app/petclinic-app.tar https://github.com/jaysonzhao/ocpvdrdemoapp/raw/refs/heads/main/petclinicvm/quarkus-petclinic-app.tar
-                - tar xvf /opt/pet-app/petclinic-app.tar
-                - nohup java -Dquarkus.datasource.jdbc.url=jdbc:mysql://petclinic-db:3602/petclinic -Dquarkus.datasource.username=petclinic -Dquarkus.datasource.password=petclinic -jar /opt/pet-app/petclinic-app.jar &
+                - curl -o /opt/pet-app/petclinic-app.jar https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/spring-petclinic.jar
+                - export MYSQL_URL=jdbc:mysql://petclinic-db:3306/petclinic
+                - nohup java -Dspring.profiles.active=mysql -jar /opt/pet-app/petclinic-app.jar &
               ssh_pwauth: true
               chpasswd:
               user: root
