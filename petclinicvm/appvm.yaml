@@ -98,8 +98,12 @@ spec:
                 - systemctl stop firewalld
                 - mkdir -p /opt/pet-app
                 - curl -o /opt/pet-app/petclinic-app.jar https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/spring-petclinic.jar
-                - export MYSQL_URL=jdbc:mysql://petclinic-db:3306/petclinic
-                - nohup java -Dspring.profiles.active=mysql -jar /opt/pet-app/petclinic-app.jar &
+                - curl -o /opt/pet-app/start-petclinic.sh https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/start-petclinic.sh
+                - curl -o /etc/systemd/system/petclinic.service https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/petclinic.service
+                - chmod +x /opt/pet-app/start-petclinic.sh
+                - systemctl daemon-reload
+                - systemctl enable petclinic.service
+                - systemctl start petclinic.service
               ssh_pwauth: true
               chpasswd:
               user: root
