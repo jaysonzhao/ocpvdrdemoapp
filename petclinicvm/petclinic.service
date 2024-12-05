@@ -1,0 +1,16 @@
+[Unit]
+Description=PetClinic Spring Boot Application
+After=network.target 
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/bin/bash /opt/pet-app/start-petclinic.sh
+WorkingDirectory=/opt/pet-app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
