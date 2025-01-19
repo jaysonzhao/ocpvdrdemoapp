@@ -1,0 +1,91 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: petclinic-db
+  annotations:
+    description: db
+  labels:
+    app: database
+    os.template.kubevirt.io/fedora: 'true'
+spec:
+  running: true
+  template:
+    metadata:
+      annotations:
+        vm.kubevirt.io/flavor: small
+        vm.kubevirt.io/os: fedora
+        vm.kubevirt.io/workload: server
+      labels:
+        app/name: petclinic-db
+        kubevirt.io/domain: example
+        kubevirt.io/size: small
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          sockets: 1
+          threads: 1
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: rootdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+            - disk:
+                bus: virtio
+              name: dbdata
+          interfaces:
+            - masquerade: {}
+              model: virtio
+              name: default
+          networkInterfaceMultiqueue: true
+          rng: {}
+        features:
+          acpi: {}
+          smm:
+            enabled: true
+        firmware:
+          bootloader:
+            efi: {}
+        machine:
+          type: q35
+        memory:
+          guest: 4Gi
+      hostname: petclinic-db
+      networks:
+        - name: default
+          pod: {}
+      terminationGracePeriodSeconds: 180
+      volumes:
+        - name: rootdisk
+          containerDisk:
+            image: quay.io/containerdisks/fedora
+        - cloudInitNoCloud:
+            userData: |-
+              #cloud-config
+              packages:
+                - mariadb-server
+              runcmd:
+                - setenforce 0
+                - systemctl stop firewalld
+                - mkfs -t btrfs /dev/vdc
+                - mount /dev/vdc /var/lib/mysql
+                - chown mysql:mysql -R /var/lib/mysql
+                - systemctl enable mariadb
+                - systemctl start mariadb
+                - mysql -e "CREATE DATABASE petclinic;"
+                - mysql -e "CREATE USER 'petclinic'@'%' IDENTIFIED BY 'petclinic';"
+                - mysql -e "GRANT ALL PRIVILEGES ON petclinic.* TO 'petclinic'@'%';"
+                - mysql -e "FLUSH PRIVILEGES;"
+                - mysql -e "USE petclinic; CREATE TABLE test (id INT PRIMARY KEY,name VARCHAR(255) NOT NULL,text VARCHAR(255) NOT NULL);"
+              ssh_pwauth: true
+              chpasswd:
+              user: root
+              password: password
+              chpasswd: { expire: False }
+          name: cloudinitdisk
+        - dataVolume:
+            name: petclinic-db-dbdata
+          name: dbdata

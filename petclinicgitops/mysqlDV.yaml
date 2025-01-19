@@ -1,0 +1,15 @@
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  annotations:
+    cdi.kubevirt.io/storage.usePopulator: 'true'
+  name: petclinic-db-dbdata
+spec:
+  preallocation: false
+  source:
+    blank: {}
+  storage:
+    resources:
+      requests:
+        storage: 10Gi
+    storageClassName: px-csi-replicated

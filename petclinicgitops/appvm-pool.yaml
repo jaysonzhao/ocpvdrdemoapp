@@ -1,0 +1,124 @@
+---
+# Service 配置
+apiVersion: v1
+kind: Service
+metadata:
+  name: petclinic-app-vm-svc
+spec:
+  selector:
+    app/name: petclinic-app-vm  # Service 选择器，与 Pod 的标签匹配
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080  # 目标容器端口
+  type: ClusterIP  # 内部通信类型
+---
+apiVersion: pool.kubevirt.io/v1alpha1
+kind: VirtualMachinePool
+metadata:
+  name: petclinic-pool
+  annotations:
+    description: petclinic application pool
+  labels:
+    app: database
+    os.template.kubevirt.io/fedora: 'true'
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      kubevirt.io/vmpool: petclinic-pool
+  virtualMachineTemplate:
+    metadata:
+      labels:
+        kubevirt.io/vmpool: petclinic-pool
+        app: database
+        os.template.kubevirt.io/fedora: 'true'
+    spec:
+      dataVolumeTemplates:
+      - metadata:
+          name: petclinic-app-pool
+        spec:
+          preallocation: false
+          source:
+            pvc:
+              name: fedora-fee3d6a527c8
+              namespace: openshift-virtualization-os-images
+          storage:
+            resources:
+              requests:
+                storage: 30Gi
+            storageClassName: px-csi-replicated
+      running: true
+      template:
+        metadata:
+          annotations:
+            vm.kubevirt.io/flavor: small
+            vm.kubevirt.io/os: fedora
+            vm.kubevirt.io/workload: server
+          labels:
+            app/name: petclinic-app-vm
+            kubevirt.io/domain: example
+            kubevirt.io/size: small
+            kubevirt.io/vmpool: petclinic-pool
+        spec:
+          domain:
+            cpu:
+              cores: 2
+              sockets: 1
+              threads: 1
+            devices:
+              disks:
+                - disk:
+                    bus: virtio
+                  name: rootdisk
+                - disk:
+                    bus: virtio
+                  name: cloudinitdisk
+              interfaces:
+                - masquerade: {}
+                  model: virtio
+                  name: default
+              networkInterfaceMultiqueue: true
+              rng: {}
+            features:
+              acpi: {}
+              smm:
+                enabled: true
+            firmware:
+              bootloader:
+                efi: {}
+            machine:
+              type: q35
+            memory:
+              guest: 4Gi
+          networks:
+            - name: default
+              pod: {}
+          terminationGracePeriodSeconds: 180
+          volumes:
+            - cloudInitNoCloud:
+                userData: |-
+                  #cloud-config
+                  packages:
+                    - java
+                  runcmd:
+                    - setenforce 0
+                    - systemctl stop firewalld
+                    - mkdir -p /opt/pet-app
+                    - curl -o /opt/pet-app/petclinic-app.jar https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/spring-petclinic.jar
+                    - curl -o /opt/pet-app/start-petclinic.sh https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/start-petclinic.sh
+                    - curl -o /etc/systemd/system/petclinic.service https://raw.githubusercontent.com/jaysonzhao/ocpvdrdemoapp/refs/heads/main/petclinicvm/petclinic.service
+                    - chmod +x /opt/pet-app/start-petclinic.sh
+                    - systemctl daemon-reload
+                    - systemctl enable petclinic.service
+                    - systemctl start petclinic.service
+                  ssh_pwauth: true
+                  chpasswd:
+                  user: root
+                  password: password
+                  chpasswd: { expire: False }
+              name: cloudinitdisk
+            - dataVolume:
+                name: petclinic-app-pool
+              name: rootdisk
+
